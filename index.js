@@ -19,6 +19,7 @@ const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology:
 async function run() {
     try {
         const usersCollection = client.db('sellPhone').collection('users')
+        const productsCollection = client.db('sellPhone').collection('products')
 
         // Save user information to the user collection
         app.put('/users', async (req, res) => {
@@ -35,6 +36,13 @@ async function run() {
             console.log(result)
             const token = jwt.sign(userInfo, process.env.ACCESS_TOKEN, { expiresIn: '1d' });
             res.send({ result, token })
+        })
+
+        //get products data from products collection on mongoDB
+        app.get('/products', async (req, res) => {
+            const query = {};
+            const result = await productsCollection.find(query).toArray();
+            res.send(result);
         })
     }
     finally {
