@@ -44,6 +44,15 @@ async function run() {
             const result = await productsCollection.find(query).toArray();
             res.send(result);
         })
+
+        //stor product at products collection on mongoDB
+        app.post('/products', async (req, res) => {
+            const productInfo = req.body;
+            console.log(productInfo)
+            const result = await productsCollection.insertOne(productInfo);
+            res.send(result);
+            console.log(result)
+        })
     }
     finally {
 
