@@ -48,8 +48,16 @@ async function run() {
         //stor product at products collection on mongoDB
         app.post('/products', async (req, res) => {
             const productInfo = req.body;
-            console.log(productInfo)
             const result = await productsCollection.insertOne(productInfo);
+            res.send(result);
+        })
+
+        //get products data category wise from products collection on mongoDB
+        app.get('/category/:name', async (req, res) => {
+            const category = req.params.name;
+            console.log(category)
+            const query = { category: category };
+            const result = await productsCollection.find(query).toArray();
             res.send(result);
             console.log(result)
         })
