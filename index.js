@@ -1,7 +1,7 @@
 const express = require("express");
 const app = express();
 const cors = require("cors");
-const { MongoClient, ServerApiVersion } = require('mongodb'); //used for mongDB
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb'); //used for mongDB
 const jwt = require('jsonwebtoken');// used for jwt token
 const port = process.env.PORT || 5000;
 
@@ -24,25 +24,43 @@ async function run() {
         // Save user information to the user collection
         app.put('/users', async (req, res) => {
             const userInfo = req.body
-            console.log(userInfo)
             const email = req.body.email
-            console.log(email)
             const filter = { email: email }
             const options = { upsert: true }
             const updatedDoc = {
                 $set: userInfo
             }
             const result = await usersCollection.updateOne(filter, updatedDoc, options)
-            console.log(result)
             const token = jwt.sign(userInfo, process.env.ACCESS_TOKEN, { expiresIn: '1d' });
             res.send({ result, token })
         })
 
-        //get products data from products collection on mongoDB
+        //get products data from products collection on mongoDB and used for advertise section
         app.get('/products', async (req, res) => {
-            const query = {};
+            const filter = { advertise: true };
+            const result = await productsCollection.find(filter).toArray();
+            res.send(result);
+        })
+
+        //get single user products data from products collection on mongoDB
+        app.get('/myProducts', async (req, res) => {
+            const email = req.query.email;
+            const query = { email: email };
             const result = await productsCollection.find(query).toArray();
             res.send(result);
+        })
+
+        //get single user products data from products collection on mongoDB
+        app.put('/productAdvertise/:id', async (req, res) => {
+            const id = req.params.id;
+            const filter = { _id: ObjectId(id) };
+            const options = { upsert: true }
+            const updatedDoc = {
+                $set: { advertise: true }
+            }
+            const result = await productsCollection.updateOne(filter, updatedDoc, options);
+            res.send(result);
+            console.log(id)
         })
 
         //stor product at products collection on mongoDB
@@ -55,11 +73,9 @@ async function run() {
         //get products data category wise from products collection on mongoDB
         app.get('/category/:name', async (req, res) => {
             const category = req.params.name;
-            console.log(category)
             const query = { category: category };
             const result = await productsCollection.find(query).toArray();
             res.send(result);
-            console.log(result)
         })
     }
     finally {
