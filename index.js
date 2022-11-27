@@ -187,6 +187,13 @@ async function run() {
         ************************** Reportings section **************
         **/
 
+        //get all reporting data from reportings collection on mongoDB
+        app.get('/rportingItems', async (req, res) => {
+            const query = {};
+            const result = await reportingsCollection.find(query).toArray();
+            res.send(result);
+        })
+
         //stor reporting data at reportings collection on mongoDB
         app.post('/rportings', async (req, res) => {
             const reportingInfo = req.body;
