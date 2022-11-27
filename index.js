@@ -55,6 +55,14 @@ async function run() {
             res.send({ result, verifiedSeller })
         })
 
+        //delete single user from users collection on mongoDB
+        app.delete('/seller/:id', async (req, res) => {
+            const id = req.params.id;
+            const filter = { _id: ObjectId(id) };
+            const result = await usersCollection.deleteOne(filter);
+            res.send(result)
+        })
+
 
         //get products data from products collection on mongoDB and used for advertise section
         app.get('/products', async (req, res) => {
