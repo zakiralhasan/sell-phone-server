@@ -20,6 +20,7 @@ async function run() {
     try {
         const usersCollection = client.db('sellPhone').collection('users')
         const productsCollection = client.db('sellPhone').collection('products')
+        const bookingsCollection = client.db('sellPhone').collection('bookings')
 
         // Save user information to the user collection
         app.put('/users', async (req, res) => {
@@ -82,7 +83,13 @@ async function run() {
             res.send(result);
         })
 
-
+        //delete single user from users collection on mongoDB
+        app.delete('/buyer/:id', async (req, res) => {
+            const id = req.params.id;
+            const filter = { _id: ObjectId(id) };
+            const result = await usersCollection.deleteOne(filter);
+            res.send(result)
+        })
 
         /**
          ************************** Products section **************8 
@@ -135,6 +142,26 @@ async function run() {
             const category = req.params.name;
             const query = { category: category };
             const result = await productsCollection.find(query).toArray();
+            res.send(result);
+        })
+
+
+        /**
+        ************************** Bookings section **************
+         **/
+
+        //stor product at products collection on mongoDB
+        app.post('/bookings', async (req, res) => {
+            const bookingInfo = req.body;
+            const filter = {
+                bookingID: bookingInfo.bookingID,
+            }
+            const bookedProduct = await bookingsCollection.findOne(filter);
+            if (bookedProduct) {
+                return res.send({ message: 'This product is already booked!' })
+            }
+            console.log(bookingInfo)
+            const result = await bookingsCollection.insertOne(bookingInfo);
             res.send(result);
         })
     }
