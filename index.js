@@ -35,6 +35,14 @@ async function run() {
             res.send({ result, token })
         })
 
+        //get seller list from users collection on mongoDB
+        app.get('/users/seller', async (req, res) => {
+            const filter = { role: "Seller" };
+            const result = await usersCollection.find(filter).toArray();
+            res.send(result);
+        })
+
+
         //get products data from products collection on mongoDB and used for advertise section
         app.get('/products', async (req, res) => {
             const filter = { advertise: true };
@@ -53,7 +61,6 @@ async function run() {
         //delete single product from product collection on mongoDB
         app.delete('/products/:id', async (req, res) => {
             const id = req.params.id;
-            console.log(id)
             const filter = { _id: ObjectId(id) };
             const result = await productsCollection.deleteOne(filter);
             res.send(result)
@@ -69,7 +76,6 @@ async function run() {
             }
             const result = await productsCollection.updateOne(filter, updatedDoc, options);
             res.send(result);
-            console.log(id)
         })
 
         //stor product at products collection on mongoDB
