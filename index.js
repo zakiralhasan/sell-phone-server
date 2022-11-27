@@ -21,6 +21,7 @@ async function run() {
         const usersCollection = client.db('sellPhone').collection('users')
         const productsCollection = client.db('sellPhone').collection('products')
         const bookingsCollection = client.db('sellPhone').collection('bookings')
+        const reportingsCollection = client.db('sellPhone').collection('reportings')
 
         // Save user information to the user collection
         app.put('/users', async (req, res) => {
@@ -164,7 +165,7 @@ async function run() {
             res.send(result);
         })
 
-        //get single user orders data from bookings collection on mongoDB
+        //get single buyer orders data from bookings collection on mongoDB
         app.get('/myOrders', async (req, res) => {
             const email = req.query.email;
             const query = { buyerEmail: email };
@@ -177,6 +178,36 @@ async function run() {
             const id = req.params.id;
             const filter = { _id: ObjectId(id) };
             const result = await bookingsCollection.deleteOne(filter);
+            res.send(result)
+        })
+
+
+
+        /**
+        ************************** Reportings section **************
+        **/
+
+        //stor reporting data at reportings collection on mongoDB
+        app.post('/rportings', async (req, res) => {
+            const reportingInfo = req.body;
+            console.log(reportingInfo)
+            const result = await reportingsCollection.insertOne(reportingInfo);
+            res.send(result);
+        })
+
+        //get single buyer reporting data from reportings collection on mongoDB
+        app.get('/rportings', async (req, res) => {
+            const email = req.query.email;
+            const query = { buyerEmail: email };
+            const result = await reportingsCollection.find(query).toArray();
+            res.send(result);
+        })
+
+        //delete reporting item from reportings collection on mongoDB
+        app.delete('/rportings/:id', async (req, res) => {
+            const id = req.params.id;
+            const filter = { _id: ObjectId(id) };
+            const result = await reportingsCollection.deleteOne(filter);
             res.send(result)
         })
     }
