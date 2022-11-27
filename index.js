@@ -42,6 +42,19 @@ async function run() {
             res.send(result);
         })
 
+        //verify seller
+        app.put('/seller', async (req, res) => {
+            const email = req.query.email;
+            const filter = { email: email };
+            const options = { upsert: true }
+            const updatedDoc = {
+                $set: { verified: true }
+            }
+            const verifiedSeller = await productsCollection.updateMany(filter, updatedDoc, options)
+            const result = await usersCollection.updateOne(filter, updatedDoc, options)
+            res.send({ result, verifiedSeller })
+        })
+
 
         //get products data from products collection on mongoDB and used for advertise section
         app.get('/products', async (req, res) => {
