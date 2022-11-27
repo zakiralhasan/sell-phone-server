@@ -35,6 +35,12 @@ async function run() {
             res.send({ result, token })
         })
 
+
+
+        /**
+         ************************** Seller section **************8 
+         **/
+
         //get seller list from users collection on mongoDB
         app.get('/users/seller', async (req, res) => {
             const filter = { role: "Seller" };
@@ -63,6 +69,24 @@ async function run() {
             res.send(result)
         })
 
+
+
+        /**
+         ************************** Buyer section **************8 
+         **/
+
+        //get buyer list from users collection on mongoDB
+        app.get('/users/buyer', async (req, res) => {
+            const filter = { role: "Buyer" };
+            const result = await usersCollection.find(filter).toArray();
+            res.send(result);
+        })
+
+
+
+        /**
+         ************************** Products section **************8 
+         **/
 
         //get products data from products collection on mongoDB and used for advertise section
         app.get('/products', async (req, res) => {
