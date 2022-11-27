@@ -150,7 +150,7 @@ async function run() {
         ************************** Bookings section **************
          **/
 
-        //stor product at products collection on mongoDB
+        //stor booking data at bookings collection on mongoDB
         app.post('/bookings', async (req, res) => {
             const bookingInfo = req.body;
             const filter = {
@@ -160,9 +160,24 @@ async function run() {
             if (bookedProduct) {
                 return res.send({ message: 'This product is already booked!' })
             }
-            console.log(bookingInfo)
             const result = await bookingsCollection.insertOne(bookingInfo);
             res.send(result);
+        })
+
+        //get single user orders data from bookings collection on mongoDB
+        app.get('/myOrders', async (req, res) => {
+            const email = req.query.email;
+            const query = { buyerEmail: email };
+            const result = await bookingsCollection.find(query).toArray();
+            res.send(result);
+        })
+
+        //delete order user from bookings collection on mongoDB
+        app.delete('/myOrders/:id', async (req, res) => {
+            const id = req.params.id;
+            const filter = { _id: ObjectId(id) };
+            const result = await bookingsCollection.deleteOne(filter);
+            res.send(result)
         })
     }
     finally {
