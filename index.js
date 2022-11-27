@@ -16,6 +16,25 @@ app.use(express.json());
 const uri = `mongodb+srv://${process.env.USER_NAME}:${process.env.USER_PASSWORD}@cluster0.krkb3gw.mongodb.net/?retryWrites=true&w=majority`;
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
 
+
+//this is actually a middle ware, which work for verifying jwt token
+function verifyJWT(req, res, next) {
+    const authHeader = req.headers.authorization;
+    if (!authHeader) {
+        return res.status(401).send({ message: 'unauthorized access' }) //second check
+    }
+
+    const token = authHeader.split(' ')[1];
+    jwt.verify(token, process.env.ACCESS_TOKEN, function (error, decoded) {
+        if (error) {
+            return res.status(403).send({ message: 'forbidden access' }) //third check
+        }
+        req.decoded = decoded;
+        next();
+    })
+}
+
+
 async function run() {
     try {
         const usersCollection = client.db('sellPhone').collection('users')
@@ -23,6 +42,43 @@ async function run() {
         const bookingsCollection = client.db('sellPhone').collection('bookings')
         const reportingsCollection = client.db('sellPhone').collection('reportings')
 
+        //this is an Buyer verify middle ware 
+        const verifyBuyer = async (req, res, next) => {
+            // console.log(req.decoded)
+            const decodedEmail = req.decoded.email;
+            const query = { email: decodedEmail };
+            const user = await usersCollection.findOne(query);
+            if (user?.role !== 'Buyer') {
+                return res.status(403).send({ message: 'forbidden access' }) //forth check
+            }
+            next()
+        }
+        //this is an Buyer verify middle ware 
+        const verifySeller = async (req, res, next) => {
+            // console.log(req.decoded)
+            const decodedEmail = req.decoded.email;
+            const query = { email: decodedEmail };
+            const user = await usersCollection.findOne(query);
+            if (user?.role !== 'Seller') {
+                return res.status(403).send({ message: 'forbidden access' }) //forth check
+            }
+            next()
+        }
+        //this is an Buyer verify middle ware 
+        const verifyAdmin = async (req, res, next) => {
+            // console.log(req.decoded)
+            const decodedEmail = req.decoded.email;
+            const query = { email: decodedEmail };
+            const user = await usersCollection.findOne(query);
+            if (user?.role !== 'Admin') {
+                return res.status(403).send({ message: 'forbidden access' }) //forth check
+            }
+            next()
+        }
+
+        /**
+        ************************** User section **************8 
+         **/
         // Save user information to the user collection
         app.put('/users', async (req, res) => {
             const userInfo = req.body
@@ -37,6 +93,13 @@ async function run() {
             res.send({ result, token })
         })
 
+        //get user data from users collection to check user role
+        app.get('/user', async (req, res) => {
+            const email = req.query.email;
+            const filter = { email: email };
+            const result = await usersCollection.findOne(filter);
+            res.send(result)
+        })
 
 
         /**
@@ -44,14 +107,14 @@ async function run() {
          **/
 
         //get seller list from users collection on mongoDB
-        app.get('/users/seller', async (req, res) => {
+        app.get('/users/seller', verifyJWT, verifyAdmin, async (req, res) => {
             const filter = { role: "Seller" };
             const result = await usersCollection.find(filter).toArray();
             res.send(result);
         })
 
         //verify seller
-        app.put('/seller', async (req, res) => {
+        app.put('/seller', verifyJWT, verifyAdmin, async (req, res) => {
             const email = req.query.email;
             const filter = { email: email };
             const options = { upsert: true }
@@ -64,7 +127,7 @@ async function run() {
         })
 
         //delete single user from users collection on mongoDB
-        app.delete('/seller/:id', async (req, res) => {
+        app.delete('/seller/:id', verifyJWT, verifyAdmin, async (req, res) => {
             const id = req.params.id;
             const filter = { _id: ObjectId(id) };
             const result = await usersCollection.deleteOne(filter);
@@ -78,14 +141,14 @@ async function run() {
          **/
 
         //get buyer list from users collection on mongoDB
-        app.get('/users/buyer', async (req, res) => {
+        app.get('/users/buyer', verifyJWT, verifyAdmin, async (req, res) => {
             const filter = { role: "Buyer" };
             const result = await usersCollection.find(filter).toArray();
             res.send(result);
         })
 
-        //delete single user from users collection on mongoDB
-        app.delete('/buyer/:id', async (req, res) => {
+        //delete single buyer from users collection on mongoDB
+        app.delete('/buyer/:id', verifyJWT, verifyAdmin, async (req, res) => {
             const id = req.params.id;
             const filter = { _id: ObjectId(id) };
             const result = await usersCollection.deleteOne(filter);
@@ -112,14 +175,14 @@ async function run() {
         })
 
         //delete single product from product collection on mongoDB
-        app.delete('/products/:id', async (req, res) => {
+        app.delete('/products/:id', verifyJWT, verifySeller, async (req, res) => {
             const id = req.params.id;
             const filter = { _id: ObjectId(id) };
             const result = await productsCollection.deleteOne(filter);
             res.send(result)
         })
 
-        //get single user products data from products collection on mongoDB
+        //get single user products data from products collection on mongoDB and used for show advertise
         app.put('/productAdvertise/:id', async (req, res) => {
             const id = req.params.id;
             const filter = { _id: ObjectId(id) };
@@ -132,7 +195,7 @@ async function run() {
         })
 
         //stor product at products collection on mongoDB
-        app.post('/products', async (req, res) => {
+        app.post('/products', verifyJWT, verifySeller, async (req, res) => {
             const productInfo = req.body;
             const result = await productsCollection.insertOne(productInfo);
             res.send(result);
@@ -166,7 +229,7 @@ async function run() {
         })
 
         //get single buyer orders data from bookings collection on mongoDB
-        app.get('/myOrders', async (req, res) => {
+        app.get('/myOrders', verifyJWT, verifyBuyer, async (req, res) => {
             const email = req.query.email;
             const query = { buyerEmail: email };
             const result = await bookingsCollection.find(query).toArray();
@@ -174,7 +237,7 @@ async function run() {
         })
 
         //delete order user from bookings collection on mongoDB
-        app.delete('/myOrders/:id', async (req, res) => {
+        app.delete('/myOrders/:id', verifyJWT, verifyBuyer, async (req, res) => {
             const id = req.params.id;
             const filter = { _id: ObjectId(id) };
             const result = await bookingsCollection.deleteOne(filter);
@@ -188,14 +251,14 @@ async function run() {
         **/
 
         //get all reporting data from reportings collection on mongoDB
-        app.get('/rportingItems', async (req, res) => {
+        app.get('/rportingItems', verifyJWT, verifyAdmin, async (req, res) => {
             const query = {};
             const result = await reportingsCollection.find(query).toArray();
             res.send(result);
         })
 
         //stor reporting data at reportings collection on mongoDB
-        app.post('/rportings', async (req, res) => {
+        app.post('/rportings', verifyJWT, verifyBuyer, async (req, res) => {
             const reportingInfo = req.body;
             console.log(reportingInfo)
             const result = await reportingsCollection.insertOne(reportingInfo);
@@ -203,7 +266,7 @@ async function run() {
         })
 
         //get single buyer reporting data from reportings collection on mongoDB
-        app.get('/rportings', async (req, res) => {
+        app.get('/rportings', verifyJWT, verifyBuyer, async (req, res) => {
             const email = req.query.email;
             const query = { buyerEmail: email };
             const result = await reportingsCollection.find(query).toArray();
