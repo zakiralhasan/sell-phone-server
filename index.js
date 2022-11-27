@@ -50,6 +50,15 @@ async function run() {
             res.send(result);
         })
 
+        //delete single product from product collection on mongoDB
+        app.delete('/products/:id', async (req, res) => {
+            const id = req.params.id;
+            console.log(id)
+            const filter = { _id: ObjectId(id) };
+            const result = await productsCollection.deleteOne(filter);
+            res.send(result)
+        })
+
         //get single user products data from products collection on mongoDB
         app.put('/productAdvertise/:id', async (req, res) => {
             const id = req.params.id;
