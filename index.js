@@ -2,11 +2,13 @@ const express = require("express");
 const app = express();
 const cors = require("cors");
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb'); //used for mongDB
+
 const jwt = require('jsonwebtoken');// used for jwt token
 const port = process.env.PORT || 5000;
 
-//used for .env file 
-require("dotenv").config();
+require("dotenv").config();//used for .env file 
+
+const stripe = require("stripe")(process.env.STRIPE_SECRET);//used for stripe
 
 // midleware
 app.use(cors());
@@ -41,6 +43,7 @@ async function run() {
         const productsCollection = client.db('sellPhone').collection('products')
         const bookingsCollection = client.db('sellPhone').collection('bookings')
         const reportingsCollection = client.db('sellPhone').collection('reportings')
+        const paymentsCollection = client.db('sellPhone').collection('payments')
 
         //this is an Buyer verify middle ware 
         const verifyBuyer = async (req, res, next) => {
@@ -279,6 +282,53 @@ async function run() {
             const filter = { _id: ObjectId(id) };
             const result = await reportingsCollection.deleteOne(filter);
             res.send(result)
+        })
+
+
+
+        /**
+         ************************** Payment section **************
+        **/
+
+
+        //get data from bookings collection by searching user id (it's used for payment handle)
+        app.get('/bookings/:id', async (req, res) => {
+            const id = req.params.id;
+            const query = { _id: ObjectId(id) };
+            const result = await bookingsCollection.findOne(query);
+            res.send(result)
+        })
+
+        //This API is used for stripe
+        app.post("/create-payment-intent", async (req, res) => {
+            const booking = req.body;
+            const price = booking.productPrice;
+            const amount = parseFloat(price * 100)
+
+            // Create a PaymentIntent with the order amount and currency
+            const paymentIntent = await stripe.paymentIntents.create({
+                amount: amount,
+                currency: "usd",
+                payment_method_types: ['card']
+            });
+            res.send({ clientSecret: paymentIntent.client_secret });
+        });
+
+
+        //stored payment information on the data base
+        app.post('/payments', async (req, res) => {
+            const payment = req.body;
+            const result = await paymentsCollection.insertOne(payment);
+            const id = payment.paymentId
+            const filter = { _id: ObjectId(id) }
+            const updatedDoc = {
+                $set: {
+                    payment: true,
+                    transactionId: payment.transactionId
+                }
+            }
+            const updatedResult = await bookingsCollection.updateOne(filter, updatedDoc)
+            res.send(result);
         })
     }
     finally {
