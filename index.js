@@ -117,7 +117,7 @@ async function run() {
         })
 
         //verify seller
-        app.put('/seller', verifyJWT, verifyAdmin, async (req, res) => {
+        app.put('/seller', async (req, res) => {
             const email = req.query.email;
             const filter = { email: email };
             const options = { upsert: true }
@@ -156,6 +156,14 @@ async function run() {
             const filter = { _id: ObjectId(id) };
             const result = await usersCollection.deleteOne(filter);
             res.send(result)
+        })
+
+        //get buyer list from users collection on mongoDB
+        app.get('/myBuyers', async (req, res) => {
+            const email = req.query.email;
+            const query = { sellerEmail: email };
+            const result = await bookingsCollection.find(query).toArray();
+            res.send(result);
         })
 
         /**
@@ -198,7 +206,7 @@ async function run() {
         })
 
         //stor product at products collection on mongoDB
-        app.post('/products', verifyJWT, verifySeller, async (req, res) => {
+        app.post('/products', async (req, res) => {
             const productInfo = req.body;
             const result = await productsCollection.insertOne(productInfo);
             res.send(result);
@@ -209,7 +217,8 @@ async function run() {
             const category = req.params.name;
             const query = { category: category };
             const result = await productsCollection.find(query).toArray();
-            res.send(result);
+            const filtedResult = result.filter(flt => flt.payment !== true);
+            res.send(filtedResult);
         })
 
 
@@ -261,7 +270,7 @@ async function run() {
         })
 
         //stor reporting data at reportings collection on mongoDB
-        app.post('/rportings', verifyJWT, verifyBuyer, async (req, res) => {
+        app.post('/rportings', async (req, res) => {
             const reportingInfo = req.body;
             console.log(reportingInfo)
             const result = await reportingsCollection.insertOne(reportingInfo);
@@ -319,15 +328,28 @@ async function run() {
         app.post('/payments', async (req, res) => {
             const payment = req.body;
             const result = await paymentsCollection.insertOne(payment);
-            const id = payment.paymentId
-            const filter = { _id: ObjectId(id) }
-            const updatedDoc = {
+
+            //used for booking collection
+            const paymentId = payment.paymentId
+            const filterBooking = { _id: ObjectId(paymentId) }
+            const updatedDocBooking = {
                 $set: {
                     payment: true,
                     transactionId: payment.transactionId
                 }
             }
-            const updatedResult = await bookingsCollection.updateOne(filter, updatedDoc)
+            const updatedResultBooing = await bookingsCollection.updateOne(filterBooking, updatedDocBooking)
+
+            //used for product collection
+            const porductId = payment.porductId
+            const filterProduct = { _id: ObjectId(porductId) }
+            const updatedDocProduct = {
+                $set: {
+                    payment: true,
+                    transactionId: payment.transactionId
+                }
+            }
+            const updatedResult = await productsCollection.updateOne(filterProduct, updatedDocProduct)
             res.send(result);
         })
     }
