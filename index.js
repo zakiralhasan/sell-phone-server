@@ -11,7 +11,13 @@ require("dotenv").config();//used for .env file
 const stripe = require("stripe")(process.env.STRIPE_SECRET);//used for stripe
 
 // midleware
-app.use(cors());
+app.use(cors({
+    "origin": ['https://sell-phone-ccf88.web.app'],
+    "methods": "GET,HEAD,PUT,PATCH,POST,DELETE",
+    "Access-Control-Allow-Credentials": true,
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Headers": "*",
+}));
 app.use(express.json());
 
 
