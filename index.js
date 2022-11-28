@@ -104,7 +104,6 @@ async function run() {
             res.send(result)
         })
 
-
         /**
          ************************** Seller section **************8 
          **/
@@ -272,7 +271,6 @@ async function run() {
         //stor reporting data at reportings collection on mongoDB
         app.post('/rportings', async (req, res) => {
             const reportingInfo = req.body;
-            console.log(reportingInfo)
             const result = await reportingsCollection.insertOne(reportingInfo);
             res.send(result);
         })
